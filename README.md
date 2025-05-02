@@ -32,13 +32,6 @@ Unlike platforms like **Upwork**, **Solvearn**, or **Fiverr**, where jobs are po
 
 ---
 
-## 📸 Screenshots
-
-### Projects & Investment Listings
-![Home](./screenshots/home.png)
-
-### Startup Toolkit Resources
-![Toolkit](./screenshots/toolkit.png)
 
 
 ---
