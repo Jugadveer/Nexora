@@ -18,47 +18,143 @@
     <!-- Bootstrap JS Bundle -->
     <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script> -->
 
-    <style>
-      :root {
-        --primary: #7c3aed; /* Purple primary color */
-        --primary-light: #a78bfa; /* Lighter purple */
-        --primary-dark: #6d28d9; /* Darker purple */
-        --background-light: #ffffff;
-        --background-gray: #f4f4ff;
-        --text-dark: #1f1f1f;
-        --text-muted: #6c757d;
-        --border-light: #e9ecef;
-      }
+    <!-- Nexora Modern Theme -->
+    <link rel="stylesheet" href="/static/nexora-theme.css">
 
-      body {
-        background-color: var(--background-gray);
-        font-family: "Segoe UI", sans-serif;
+    <style>
+      /* Override Bootstrap with our theme */
+
+      /* Home page specific styles */
+      .hero {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        color: var(--text-inverse);
+        border-radius: var(--radius-xl);
+        padding: 4rem 2rem;
+        margin: 2rem 0;
+        text-align: center;
       }
 
       .hero h1 {
         font-weight: 700;
-        font-size: 2.5rem;
-        color: var(--text-dark);
+        font-size: 3rem;
+        color: var(--text-inverse);
+        margin-bottom: 1rem;
       }
 
-      .card:hover {
+      .hero p {
+        font-size: 1.25rem;
+        color: rgba(249, 250, 251, 0.9);
+        margin-bottom: 2rem;
+      }
+
+      .feature-card {
+        background: var(--bg-secondary);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        text-align: center;
+        box-shadow: var(--shadow-md);
+        transition: all var(--transition-normal);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+      }
+
+      .feature-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-xl);
+      }
+
+      .feature-icon {
+        width: 4rem;
+        height: 4rem;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        color: var(--text-inverse);
+        font-size: 1.5rem;
+      }
+
+      /* Project cards */
+      .project-card {
+        background: var(--bg-secondary);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+        transition: all var(--transition-normal);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+      }
+
+      .project-card:hover {
         transform: translateY(-4px);
-        transition: 0.3s ease;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-xl);
       }
 
-      .btn-purple {
-        background-color: var(--primary);
-        color: white;
+      .project-card .card-header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: var(--text-inverse);
+        padding: 1.5rem;
         border: none;
       }
 
-      .btn-purple:hover {
-        background-color: var(--primary-dark);
+      .project-card .card-title {
+        color: var(--text-inverse);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
       }
 
-      input::placeholder {
-        color: #999 !important;
+      .project-card .card-text {
+        color: rgba(249, 250, 251, 0.9);
+      }
+
+      .progress-bar {
+        background-color: var(--accent);
+        border-radius: var(--radius-sm);
+      }
+
+      .progress {
+        background-color: rgba(245, 158, 11, 0.2);
+        border-radius: var(--radius-sm);
+      }
+
+      /* Navigation */
+      .navbar-brand {
+        color: var(--primary) !important;
+        font-weight: 700;
+        font-size: 1.75rem;
+      }
+
+      .nav-link {
+        color: var(--text-secondary) !important;
+        font-weight: 500;
+        transition: color var(--transition-fast);
+      }
+
+      .nav-link:hover {
+        color: var(--primary) !important;
+      }
+
+      /* Footer */
+      .footer {
+        background: var(--text-primary);
+        color: var(--text-inverse);
+        padding: 3rem 0 2rem;
+        margin-top: 4rem;
+      }
+
+      .footer h5 {
+        color: var(--text-inverse);
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+
+      .footer a {
+        color: var(--text-muted);
+        transition: color var(--transition-fast);
+      }
+
+      .footer a:hover {
+        color: var(--secondary);
       }
 
       .form-control-light {
@@ -503,8 +599,7 @@
             </div>
             <button
               type="submit"
-              class="btn btn-primary w-100"
-              style="background-color: #4c1d95"
+              class="btn-primary w-100"
             >
               Login
             </button>
@@ -585,8 +680,7 @@
             </div>
             <button
               type="submit"
-              class="btn btn-success w-100"
-              style="background-color: #4c1d95"
+              class="btn-accent w-100"
             >
               Register
             </button>
@@ -679,7 +773,8 @@
           <!-- Create Project Button -->
           <button
             type="button"
-            class="btn btn-purple px-4 py-2 rounded-3"
+            class="btn-accent px-4 py-2"
+            style="border-radius: var(--radius-lg);"
             data-bs-toggle="modal"
             data-bs-target="#createProjectModal"
           >
@@ -691,12 +786,12 @@
       <!-- Filters -->
       <div class="d-flex flex-wrap align-items-center mt-3 gap-2">
         <span class="fw-semibold text-dark">Filter by:</span>
-        <a href="{% url 'home' %}" class="btn btn-outline-secondary"
+        <a href="{% url 'home' %}" class="btn-outline"
           >ALL PROJECTS</a
         >
         <a
           href="?mine=1{% if query %}&q={{ query }}{% endif %}"
-          class="btn btn-outline-secondary"
+          class="btn-outline"
           >MY PROJECTS</a
         >
         <div class="dropdown">

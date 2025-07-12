@@ -1,9 +1,13 @@
 {% load humanize %}
 
+<!-- Nexora Modern Theme -->
+<link rel="stylesheet" href="/static/nexora-theme.css">
+
 <style>
   body {
-    background-color: #f3eefd;
-    font-family: 'Segoe UI', sans-serif;
+    background-color: var(--bg-primary);
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    color: var(--text-primary);
   }
 
   .container {
@@ -14,23 +18,26 @@
 
   .sidebar {
     width: 250px;
-    background: #fff;
-    border-radius: 20px;
-    padding: 20px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(0, 0, 0, 0.05);
   }
 
   .project {
-    padding: 10px 15px;
-    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
     cursor: pointer;
-    color: #6a38d9;
+    color: var(--primary);
     font-weight: 600;
-    margin-bottom: 10px;
+    margin-bottom: 0.75rem;
+    transition: all var(--transition-fast);
   }
 
   .project:hover, .project.active {
-    background: #eee6ff;
+    background: rgba(79, 70, 229, 0.1);
+    color: var(--primary-dark);
   }
 
   .content {
@@ -38,15 +45,22 @@
   }
 
   .app-card {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+    background-color: var(--bg-secondary);
+    padding: 1.5rem;
+    border-radius: var(--radius-xl);
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all var(--transition-normal);
+  }
+
+  .app-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
   }
 
   .username {
-    color: #6a38d9;
+    color: var(--primary);
     font-weight: 600;
   }
 

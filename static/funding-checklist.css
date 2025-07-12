@@ -8,8 +8,9 @@
 
 body {
   min-height: 100vh;
-  background: linear-gradient(to bottom, #f9f9fb, #f0f0f5);
+  background-color: #F9FAFB;
   padding: 2rem 1rem;
+  color: #111827;
 }
 
 .container {
@@ -27,7 +28,7 @@ body {
 }
 
 .header {
-  background: linear-gradient(to right, #7e22ce, #a855f7);
+  background: linear-gradient(135deg, #4F46E5, #06B6D4);
   padding: 1.5rem;
   color: white;
 }
