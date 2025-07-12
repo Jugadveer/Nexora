@@ -32,8 +32,6 @@ Unlike platforms like **Upwork**, **Solvearn**, or **Fiverr**, where jobs are po
 
 ---
 
-
-
 ---
 
 ## ⚙️ Tech Stack
@@ -45,7 +43,6 @@ Unlike platforms like **Upwork**, **Solvearn**, or **Fiverr**, where jobs are po
 - **Authentication**: Django Auth
 - **AI Mentorship**: Groq-based startup guidance with specialized entrepreneur prompts
 
-
 ---
 
 ## 🆕 Latest Updates
@@ -53,23 +50,27 @@ Unlike platforms like **Upwork**, **Solvearn**, or **Fiverr**, where jobs are po
 ### Major Platform Improvements (Latest Release)
 
 **🔧 MetaMask Integration Fixes:**
+
 - Fixed modal closing issues after wallet connection
 - Resolved button state problems without page reload
 - Enhanced wallet connection state management
 - Improved error handling and user feedback
 
 **🌐 New Pages Added:**
+
 - **About Page**: Company mission, vision, and values
 - **Features Page**: Comprehensive platform capabilities and pricing plans
 - **Contact Page**: Contact form, FAQ, and company information
 
 **🤖 Enhanced AI Chatbot:**
+
 - Specialized for entrepreneur mentorship
 - Quick action buttons for common startup questions
 - Improved UI with professional design
 - 24/7 availability for business guidance
 
 **🎨 UI/UX Improvements:**
+
 - Professional design with gradient backgrounds
 - Fully responsive across all devices
 - Enhanced navigation and footer
@@ -78,6 +79,7 @@ Unlike platforms like **Upwork**, **Solvearn**, or **Fiverr**, where jobs are po
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - Python 3.8+
 - Node.js (for frontend dependencies)
 - MetaMask browser extension
@@ -86,34 +88,40 @@ Unlike platforms like **Upwork**, **Solvearn**, or **Fiverr**, where jobs are po
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/Jugadveer/Nexora.git
    cd Nexora
    ```
 
 2. **Set up virtual environment**
+
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. **Install dependencies**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 4. **Set up environment variables**
+
    ```bash
    cp .env.example .env
    # Edit .env file with your API keys and configuration
    ```
 
 5. **Run migrations**
+
    ```bash
    python manage.py migrate
    ```
 
 6. **Start the development server**
+
    ```bash
    python manage.py runserver
    ```
@@ -135,6 +143,3 @@ SECRET_KEY=your_django_secret_key
 Get your Groq API key from: https://console.groq.com/
 
 ---
-
-
-
