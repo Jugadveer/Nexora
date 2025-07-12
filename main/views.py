@@ -38,12 +38,29 @@ def ask_groqcloud(message):
     if not groq_client:
         logger.error("Groq client not initialized")
         return "AI service is currently unavailable. Please try again later."
-    
+
     try:
+        # Enhanced system prompt for entrepreneurs
+        system_prompt = """You are an expert AI mentor for entrepreneurs and startup founders on Nexora, a Web3 startup funding platform.
+
+Your expertise includes:
+- Startup strategy and business model development
+- Fundraising and investor relations
+- Market validation and customer discovery
+- Product development and MVP creation
+- Team building and hiring
+- Web3 and blockchain technology for startups
+- Cryptocurrency fundraising and tokenomics
+- Pitch deck creation and presentation skills
+- Legal and regulatory considerations for startups
+- Growth hacking and marketing strategies
+
+Provide actionable, practical advice tailored to early-stage entrepreneurs. Be encouraging but realistic. Keep responses concise but comprehensive. Always consider the Web3/crypto context when relevant."""
+
         response = groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": "You are a helpful assistant for a startup funding platform. Provide concise, helpful answers about startups, funding, and entrepreneurship."},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": message},
             ],
             max_tokens=1024,
@@ -548,3 +565,15 @@ def chatbot_view(request):
         return render(request, 'chatbot.html', {'chats': chats})
     # For unauthenticated users, pass an empty list
     return render(request, 'chatbot.html', {'chats': []})
+
+def about_view(request):
+    """Render the About page"""
+    return render(request, 'about.html')
+
+def features_view(request):
+    """Render the Features page"""
+    return render(request, 'features.html')
+
+def contact_view(request):
+    """Render the Contact page"""
+    return render(request, 'contact.html')

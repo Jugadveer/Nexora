@@ -14,5 +14,8 @@ urlpatterns = [
     path('blog/', views.blog, name='blog'),
     path('messages/history/<int:application_id>/', views.message_history, name='message_history'),
     path('messages/send/', views.send_message, name='send_message'),
-    path('chatbot/', views.chatbot_view, name='chatbot')  
+    path('chatbot/', views.chatbot_view, name='chatbot'),
+    path('about/', views.about_view, name='about'),
+    path('features/', views.features_view, name='features'),
+    path('contact/', views.contact_view, name='contact'),
 ]

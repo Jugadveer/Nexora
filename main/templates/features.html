@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Features - Nexora</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .hero-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            margin: 2rem 0;
+            padding: 3rem;
+        }
+        .feature-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 1rem 0;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+        }
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+        }
+        .text-gradient {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        .pricing-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        .pricing-card.featured {
+            border: 3px solid #667eea;
+            transform: scale(1.05);
+        }
+        .pricing-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-gradient" href="{% url 'home' %}">Nexora</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'home' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'about' %}">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'features' %}">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'contact' %}">Contact</a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'notifications' %}" class="btn btn-outline-primary me-2">
+                            <i class="bi bi-bell"></i> Notifications
+                        </a>
+                        <form action="{% url 'logout' %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button class="btn btn-outline-danger">Logout</button>
+                        </form>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-outline-primary me-2">Login</a>
+                        <a href="{% url 'register' %}" class="btn btn-primary">Sign Up</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container" style="margin-top: 100px;">
+        <!-- Hero Section -->
+        <div class="hero-section text-center text-white">
+            <h1 class="display-4 fw-bold mb-4">Powerful Features for Entrepreneurs</h1>
+            <p class="lead mb-4">Everything you need to validate, fund, and scale your startup in one comprehensive platform.</p>
+        </div>
+
+        <!-- Core Features -->
+        <div class="row mb-5">
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="feature-card text-center">
+                    <i class="bi bi-robot feature-icon text-primary"></i>
+                    <h4 class="text-gradient">AI Mentorship</h4>
+                    <p>Get instant, personalized guidance from our advanced AI mentor trained specifically for entrepreneurs. Available 24/7 to help with strategy, funding, and growth decisions.</p>
+                    <ul class="list-unstyled text-start">
+                        <li><i class="bi bi-check-circle text-success"></i> Business model validation</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Market analysis insights</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Pitch deck optimization</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Growth strategy planning</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="feature-card text-center">
+                    <i class="bi bi-currency-bitcoin feature-icon text-warning"></i>
+                    <h4 class="text-gradient">Crypto Funding</h4>
+                    <p>Secure funding through cryptocurrency investments with transparent, blockchain-verified transactions. Connect with global investors instantly.</p>
+                    <ul class="list-unstyled text-start">
+                        <li><i class="bi bi-check-circle text-success"></i> MetaMask integration</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Smart contract security</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Real-time funding tracking</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Global investor access</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="feature-card text-center">
+                    <i class="bi bi-people feature-icon text-info"></i>
+                    <h4 class="text-gradient">Team Building</h4>
+                    <p>Find co-founders, developers, marketers, and other key team members who believe in your vision and are ready to join your startup journey.</p>
+                    <ul class="list-unstyled text-start">
+                        <li><i class="bi bi-check-circle text-success"></i> Skill-based matching</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Equity-based positions</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Direct messaging</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Portfolio showcasing</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Features -->
+        <div class="row mb-5">
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="feature-card text-center">
+                    <i class="bi bi-graph-up feature-icon text-success"></i>
+                    <h4 class="text-gradient">Analytics Dashboard</h4>
+                    <p>Track your startup's progress with comprehensive analytics including funding progress, team applications, and investor interest.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="feature-card text-center">
+                    <i class="bi bi-shield-check feature-icon text-danger"></i>
+                    <h4 class="text-gradient">Blockchain Security</h4>
+                    <p>All transactions and agreements are secured by blockchain technology, ensuring transparency, immutability, and trust.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="feature-card text-center">
+                    <i class="bi bi-chat-dots feature-icon text-purple"></i>
+                    <h4 class="text-gradient">Real-time Communication</h4>
+                    <p>Built-in messaging system for seamless communication between entrepreneurs, team members, and investors.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tools & Resources -->
+        <div class="feature-card mb-5">
+            <h3 class="text-gradient mb-4 text-center"><i class="bi bi-tools"></i> Entrepreneur Tools & Resources</h3>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <h5><i class="bi bi-clipboard-check text-primary"></i> Startup Checklists</h5>
+                    <p>Step-by-step checklists to guide you through every stage of your startup journey, from ideation to scaling.</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <h5><i class="bi bi-file-earmark-text text-success"></i> Business Templates</h5>
+                    <p>Professional templates for business plans, pitch decks, financial models, and legal documents.</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <h5><i class="bi bi-question-circle text-info"></i> Interactive Quizzes</h5>
+                    <p>Validate your business ideas and assess your entrepreneurial readiness with our comprehensive quizzes.</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <h5><i class="bi bi-calculator text-warning"></i> Financial Calculators</h5>
+                    <p>Calculate market size, funding requirements, equity splits, and other crucial business metrics.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pricing Section -->
+        <div class="text-center mb-4">
+            <h2 class="text-white mb-4">Choose Your Plan</h2>
+        </div>
+        <div class="row mb-5">
+            <div class="col-lg-4 mb-4">
+                <div class="pricing-card">
+                    <h4 class="text-gradient">Starter</h4>
+                    <div class="display-4 fw-bold text-primary">Free</div>
+                    <p class="text-muted">Perfect for getting started</p>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-check text-success"></i> AI Mentorship (Limited)</li>
+                        <li><i class="bi bi-check text-success"></i> Basic Project Listing</li>
+                        <li><i class="bi bi-check text-success"></i> Community Access</li>
+                        <li><i class="bi bi-check text-success"></i> Basic Templates</li>
+                    </ul>
+                    <a href="{% url 'register' %}" class="btn btn-outline-primary">Get Started</a>
+                </div>
+            </div>
+            <div class="col-lg-4 mb-4">
+                <div class="pricing-card featured">
+                    <div class="badge bg-primary position-absolute top-0 start-50 translate-middle">Most Popular</div>
+                    <h4 class="text-gradient">Pro</h4>
+                    <div class="display-4 fw-bold text-primary">$29<small class="fs-6">/month</small></div>
+                    <p class="text-muted">For serious entrepreneurs</p>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-check text-success"></i> Unlimited AI Mentorship</li>
+                        <li><i class="bi bi-check text-success"></i> Advanced Analytics</li>
+                        <li><i class="bi bi-check text-success"></i> Priority Support</li>
+                        <li><i class="bi bi-check text-success"></i> All Templates & Tools</li>
+                        <li><i class="bi bi-check text-success"></i> Featured Listings</li>
+                    </ul>
+                    <a href="{% url 'register' %}" class="btn btn-primary">Upgrade to Pro</a>
+                </div>
+            </div>
+            <div class="col-lg-4 mb-4">
+                <div class="pricing-card">
+                    <h4 class="text-gradient">Enterprise</h4>
+                    <div class="display-4 fw-bold text-primary">Custom</div>
+                    <p class="text-muted">For established companies</p>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-check text-success"></i> Everything in Pro</li>
+                        <li><i class="bi bi-check text-success"></i> Custom AI Training</li>
+                        <li><i class="bi bi-check text-success"></i> White-label Solutions</li>
+                        <li><i class="bi bi-check text-success"></i> Dedicated Support</li>
+                        <li><i class="bi bi-check text-success"></i> API Access</li>
+                    </ul>
+                    <a href="{% url 'contact' %}" class="btn btn-outline-primary">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-5 py-4" style="background: rgba(0, 0, 0, 0.8);">
+        <div class="container">
+            <div class="row text-white">
+                <div class="col-md-4">
+                    <h5 class="text-gradient">Nexora</h5>
+                    <p>Empowering entrepreneurs with AI mentorship and blockchain funding.</p>
+                </div>
+                <div class="col-md-4">
+                    <h6>Quick Links</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'home' %}" class="text-light text-decoration-none">Home</a></li>
+                        <li><a href="{% url 'about' %}" class="text-light text-decoration-none">About</a></li>
+                        <li><a href="{% url 'features' %}" class="text-light text-decoration-none">Features</a></li>
+                        <li><a href="{% url 'contact' %}" class="text-light text-decoration-none">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Connect With Us</h6>
+                    <div class="d-flex">
+                        <a href="#" class="text-light me-3"><i class="bi bi-twitter"></i></a>
+                        <a href="#" class="text-light me-3"><i class="bi bi-linkedin"></i></a>
+                        <a href="#" class="text-light me-3"><i class="bi bi-discord"></i></a>
+                        <a href="#" class="text-light"><i class="bi bi-github"></i></a>
+                    </div>
+                </div>
+            </div>
+            <hr class="text-white">
+            <div class="text-center text-white">
+                <p>&copy; 2024 Nexora. All rights reserved. | <a href="#" class="text-light">Privacy Policy</a> | <a href="#" class="text-light">Terms of Service</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

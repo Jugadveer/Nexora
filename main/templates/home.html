@@ -789,17 +789,17 @@
         </div>
         <div>
           <a
-            href="#"
+            href="{% url 'about' %}"
             style="margin-right: 20px; text-decoration: none; color: #333"
             >About</a
           >
           <a
-            href="#"
+            href="{% url 'features' %}"
             style="margin-right: 20px; text-decoration: none; color: #333"
             >Features</a
           >
           <a
-            href="#"
+            href="{% url 'contact' %}"
             style="margin-right: 20px; text-decoration: none; color: #333"
             >Contact</a
           >
@@ -2801,13 +2801,22 @@ z-index: 1000;
           }
 
           try {
+            // Disable button and show spinner
             confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
             spinner.style.display = "block";
 
+            // Initialize Web3 and request account access
             const web3 = new Web3(window.ethereum);
-            const accounts = await window.ethereum.request({
-              method: "eth_requestAccounts",
-            });
+
+            // Check if already connected, if not request connection
+            let accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            if (accounts.length === 0) {
+              accounts = await window.ethereum.request({
+                method: "eth_requestAccounts",
+              });
+            }
+
             const sender = accounts[0];
             const weiAmount = web3.utils.toWei(amount, "ether");
 
@@ -2828,7 +2837,7 @@ z-index: 1000;
               if (fundingData) {
                 updateFundingProgress(projectId, fundingData);
               } else {
-                resultBox.innerHTML = `<div class="alert alert-success">Investment successful!</div>`;
+                resultBox.innerHTML = `<div class="alert alert-success">Investment successful! Transaction: ${tx.transactionHash}</div>`;
               }
             } catch (contractError) {
               console.warn(
@@ -2850,27 +2859,53 @@ z-index: 1000;
               if (fundingData) {
                 updateFundingProgress(projectId, fundingData);
               } else {
-                resultBox.innerHTML = `<div class="alert alert-success">Direct investment successful!</div>`;
+                resultBox.innerHTML = `<div class="alert alert-success">Direct investment successful! Transaction: ${tx.transactionHash}</div>`;
               }
             }
+
+            // Auto-close modal after successful transaction
+            setTimeout(() => {
+              const modal = bootstrap.Modal.getInstance(document.getElementById('investModal'));
+              if (modal) {
+                modal.hide();
+              }
+            }, 3000);
+
           } catch (error) {
             console.error("Investment error:", error);
-            resultBox.innerHTML = `<div class="alert alert-danger">Transaction failed: ${
-              error.message || "Unknown error"
-            }</div>`;
+            let errorMessage = "Transaction failed";
+
+            if (error.code === 4001) {
+              errorMessage = "Transaction was rejected by user";
+            } else if (error.code === -32603) {
+              errorMessage = "Internal error - please try again";
+            } else if (error.message) {
+              errorMessage = error.message;
+            }
+
+            resultBox.innerHTML = `<div class="alert alert-danger">${errorMessage}</div>`;
           } finally {
             spinner.style.display = "none";
             confirmBtn.disabled = false;
+            confirmBtn.innerHTML = 'Confirm Investment';
           }
         }
 
         function initInvestmentModal() {
           const investModal = document.getElementById("investModal");
           if (investModal) {
+            // Reset modal state when shown
             investModal.addEventListener("show.bs.modal", function (event) {
+              const confirmBtn = document.getElementById("confirmInvestment");
+              const spinner = document.getElementById("spinner");
+              const resultBox = document.getElementById("txResult");
+
+              // Reset form and UI state
               document.getElementById("investAmount").value = "";
-              document.getElementById("txResult").innerHTML = "";
-              document.getElementById("spinner").style.display = "none";
+              resultBox.innerHTML = "";
+              spinner.style.display = "none";
+              confirmBtn.disabled = false;
+              confirmBtn.innerHTML = 'Confirm Investment';
 
               const button = event.relatedTarget;
               const projectId = button.getAttribute("data-project-id");
@@ -2879,15 +2914,73 @@ z-index: 1000;
               document.getElementById("projectNameSpan").textContent =
                 projectName || "Project";
             });
+
+            // Reset state when modal is hidden
+            investModal.addEventListener("hidden.bs.modal", function (event) {
+              const confirmBtn = document.getElementById("confirmInvestment");
+              const spinner = document.getElementById("spinner");
+              const resultBox = document.getElementById("txResult");
+
+              // Ensure everything is reset
+              document.getElementById("investAmount").value = "";
+              resultBox.innerHTML = "";
+              spinner.style.display = "none";
+              confirmBtn.disabled = false;
+              confirmBtn.innerHTML = 'Confirm Investment';
+            });
           }
 
           const confirmBtn = document.getElementById("confirmInvestment");
           if (confirmBtn) {
-            confirmBtn.addEventListener("click", (e) => {
+            // Remove any existing listeners to prevent duplicates
+            confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+            const newConfirmBtn = document.getElementById("confirmInvestment");
+
+            newConfirmBtn.addEventListener("click", (e) => {
               e.preventDefault();
+              e.stopPropagation();
               handleInvestment();
             });
           }
+        }
+
+        // Wallet connection state management
+        let walletConnected = false;
+        let currentAccount = null;
+
+        async function checkWalletConnection() {
+          if (typeof window.ethereum !== "undefined") {
+            try {
+              const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+              if (accounts.length > 0) {
+                walletConnected = true;
+                currentAccount = accounts[0];
+                console.log("Wallet connected:", currentAccount);
+              }
+            } catch (error) {
+              console.error("Error checking wallet connection:", error);
+            }
+          }
+        }
+
+        // Listen for account changes
+        if (typeof window.ethereum !== "undefined") {
+          window.ethereum.on('accountsChanged', function (accounts) {
+            if (accounts.length > 0) {
+              walletConnected = true;
+              currentAccount = accounts[0];
+              console.log("Account changed:", currentAccount);
+            } else {
+              walletConnected = false;
+              currentAccount = null;
+              console.log("Wallet disconnected");
+            }
+          });
+
+          window.ethereum.on('chainChanged', function (chainId) {
+            console.log("Chain changed:", chainId);
+            // Optionally reload the page or update UI
+          });
         }
 
         document.addEventListener("DOMContentLoaded", function () {
@@ -2904,6 +2997,7 @@ z-index: 1000;
                 });
               });
           } else {
+            checkWalletConnection();
             initInvestmentModal();
           }
         });
