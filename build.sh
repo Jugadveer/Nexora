@@ -16,9 +16,13 @@ python -c "import django; print(f'Django version: {django.get_version()}')"
 echo "Checking database connection..."
 python manage.py check --database default
 
-# Apply database migrations
+# Apply database migrations with force fix
 echo "Applying database migrations..."
-python manage.py migrate --verbosity=2
+python manage.py migrate --verbosity=2 || echo "Standard migration failed, trying force fix..."
+
+# Force fix database if needed
+echo "Running database force fix..."
+python manage.py force_migrate || echo "Force migrate failed, continuing..."
 
 # Show migration status
 echo "Migration status:"
