@@ -75,35 +75,16 @@ def get_gemini_model():
 gemini_model = get_gemini_model()
 
 def ask_gemini(message):
-    """Send a message to Gemini API and get a response"""
+    """Send a message to AI service and get a response with fallback"""
     try:
-        import google.generativeai as genai
-        from django.conf import settings
+        from main.ai_service import ai_service
         
-        # Get API key from settings
-        GEMINI_API_KEY = getattr(settings, 'GEMINI_API_KEY', None)
+        system_prompt = "You are a helpful assistant for a startup funding platform. Provide concise, helpful answers about startups, funding, and entrepreneurship."
         
-        if not GEMINI_API_KEY:
-            logger.error("GEMINI_API_KEY not configured in settings")
-            return "AI service is currently unavailable. Please try again later."
-        
-        # Configure Gemini
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        
-        prompt = f"You are a helpful assistant for a startup funding platform. Provide concise, helpful answers about startups, funding, and entrepreneurship.\n\nUser: {message}"
-        response = model.generate_content(prompt)
-        
-        if response and response.text:
-            return response.text.strip()
-        else:
-            return "I couldn't generate a response. Please try rephrasing your question."
+        return ai_service.generate_content(message, system_prompt)
             
     except Exception as e:
-        logger.error(f"Gemini API call failed: {e}")
-        # Check if it's a quota exceeded error
-        if "quota" in str(e).lower() or "429" in str(e):
-            return _get_fallback_response(message)
+        logger.error(f"AI service call failed: {e}")
         return "AI service is temporarily unavailable. Please try again later."
 
 def _get_fallback_response(message):
@@ -1695,39 +1676,20 @@ def ai_mentorship_api(request):
         return JsonResponse({'success': False, 'error': 'Internal server error'})
 
 def ask_gemini_mentorship(message, system_prompt):
-    """Enhanced Gemini API call for mentorship with system prompt"""
+    """Enhanced AI service call for mentorship with system prompt and fallback"""
     try:
-        import google.generativeai as genai
-        from django.conf import settings
+        from main.ai_service import ai_service
         
-        # Get API key from settings
-        GEMINI_API_KEY = getattr(settings, 'GEMINI_API_KEY', None)
+        logger.info(f"Making AI service call for mentorship with message: {message[:50]}...")
         
-        if not GEMINI_API_KEY:
-            logger.error("GEMINI_API_KEY not configured in settings")
-            return "AI mentorship service is currently unavailable. Please try again later."
+        result = ai_service.generate_content(message, system_prompt, max_tokens=800)
         
-        # Configure Gemini
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        
-        logger.info(f"Making Gemini API call for mentorship with message: {message[:50]}...")
-        prompt = f"{system_prompt}\n\nUser: {message}"
-        response = model.generate_content(prompt)
-        
-        if response and response.text:
-            result = response.text.strip()
-            logger.info("Gemini API call successful")
-            return result
-        else:
-            return "I couldn't generate a response. Please try rephrasing your question."
+        logger.info("AI service call successful")
+        return result
             
     except Exception as e:
-        logger.error(f"Gemini API error in mentorship: {str(e)}")
-        # Check if it's a quota exceeded error
-        if "quota" in str(e).lower() or "429" in str(e):
-            return _get_mentorship_fallback_response(message)
-        return "I apologize, but I'm experiencing technical difficulties. Please try again in a moment."
+        logger.error(f"AI service error in mentorship: {str(e)}")
+        return _get_mentorship_fallback_response(message)
 
 def _get_mentorship_fallback_response(message):
     """Provide intelligent fallback responses for mentorship when API quota is exceeded"""

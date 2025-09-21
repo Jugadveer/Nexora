@@ -1651,6 +1651,7 @@
           </div>
         </form>
       <!-- Filters -->
+      {% if user.is_authenticated %}
       <div class="d-flex flex-wrap align-items-center mt-3 gap-2">
         <span class="fw-semibold text-dark">Filter by:</span>
         <a href="?all_projects=1{% if query %}&q={{ query }}{% endif %}" 
@@ -1662,13 +1663,11 @@
           class="btn btn-outline-secondary {% if mine %}active{% endif %}"
           >MY PROJECTS</a
         >
-        {% if user.is_authenticated %}
         <a
           href="?invested=1{% if query %}&q={{ query }}{% endif %}"
           class="btn btn-outline-secondary {% if invested %}active{% endif %}"
           >ALREADY INVESTED</a
         >
-        {% endif %}
         <div class="dropdown">
           <button
             class="btn btn-outline-secondary dropdown-toggle"
@@ -1801,6 +1800,7 @@
           </div>
         </div>
       </div>
+      {% endif %}
     </div>
 
     {% else %}
@@ -2574,6 +2574,7 @@
       <input type="hidden" name="positions_json" id="positionsJsonInput" />
 
       <!-- Project Cards -->
+      {% if user.is_authenticated %}
       <div class="container mt-4">
         {% if show_personalized_alert and user.is_authenticated %}
         <div class="alert alert-info d-flex align-items-center" role="alert">
@@ -2686,6 +2687,7 @@
                   </button>
                   {% endif %}
                 </div>
+                {% if user.is_authenticated %}
                 <a
                   href="#"
                   class="btn btn-purple btn-sm"
@@ -2694,9 +2696,18 @@
                   data-project-id="{{ project.id }}"
                   >Invest Now</a
                 >
+                {% else %}
+                <a
+                  href="{% url 'login' %}"
+                  class="btn btn-purple btn-sm"
+                  title="Login to invest"
+                  >Login to Invest</a
+                >
+                {% endif %}
                 
               </div>
 
+{% if user.is_authenticated %}
 <div>
   <button  
   class="btn btn-outline-purple btn-sm select-compare-btn" 
@@ -2705,6 +2716,7 @@
   <i class="bi bi-check2-square"></i> Select for Comparison
 </button>
 </div>
+{% endif %}
 
             </div>
             
@@ -2712,7 +2724,9 @@
           {% endfor %}
         </div>
       </div>
+      {% endif %}
 
+      {% if user.is_authenticated %}
       {% for project in projects %}
       <div
         class="modal fade"
@@ -2769,6 +2783,7 @@
                     >View Website</a
                   ><br />
                   {% endif %}
+                  {% if user.is_authenticated %}
                   <a
                     href="#"
                     class="btn btn-purple"
@@ -2778,6 +2793,14 @@
                     data-project-name="{{ project.name }}"
                     >Invest Now</a
                   >
+                  {% else %}
+                  <a
+                    href="{% url 'login' %}"
+                    class="btn btn-purple"
+                    title="Login to invest"
+                    >Login to Invest</a
+                  >
+                  {% endif %}
                 </div>
               </div>
 
@@ -3147,6 +3170,7 @@
         </div>
       </div>
       {% endfor %}
+      {% endif %}
 
       <!-- Modal -->
       <div

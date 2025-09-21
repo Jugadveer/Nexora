@@ -9,6 +9,7 @@ from django.db.models import Count, Sum, Avg, Q
 from django.utils import timezone
 from datetime import timedelta
 from main.models import Project, Investment, ProjectView, Position, AIAnalystReport
+from django.db import models
 # from main.views import ask_gemini  # Commenting out to avoid API dependency issues
 
 logger = logging.getLogger(__name__)
@@ -183,8 +184,10 @@ class AIAnalyst:
             return self._get_default_benchmarking()
     
     def _generate_ai_analysis(self, project: Project, risk_indicators: Dict, growth_metrics: Dict, peer_benchmarks: Dict) -> Dict:
-        """Generate AI-powered analysis text using Gemini"""
+        """Generate AI-powered analysis text using AI service with fallback"""
         try:
+            from main.ai_service import ai_service
+            
             # Prepare context for AI analysis
             context = {
                 'project_name': project.name,
@@ -474,8 +477,10 @@ class AIAnalyst:
     
     # AI text generation methods
     def _generate_risk_analysis_text(self, context: Dict) -> str:
-        """Generate risk analysis text using AI"""
+        """Generate risk analysis text using AI service with fallback"""
         try:
+            from main.ai_service import ai_service
+            
             prompt = f"""
             Analyze the risk profile for the startup "{context['project_name']}" in the {context['category']} sector.
             
@@ -485,48 +490,79 @@ class AIAnalyst:
             - Current Funding: {context['current_funding']} ETH
             - Stage: {context['stage']}
             
-            Provide a concise risk analysis focusing on:
-            1. Key risk factors
-            2. Market risks
-            3. Financial risks
-            4. Team risks
+            Format your response EXACTLY like this with bullet points:
             
-            Keep it under 200 words and investor-focused.
+            **Key Risk Factors:**
+            • [First bullet point under 20 words]
+            • [Second bullet point under 20 words]
+            • [Third bullet point under 20 words]
+            
+            **Market Risks:**
+            • [First bullet point under 20 words]
+            • [Second bullet point under 20 words]
+            • [Third bullet point under 20 words]
+            
+            **Financial Risks:**
+            • [First bullet point under 20 words]
+            • [Second bullet point under 20 words]
+            • [Third bullet point under 20 words]
+            
+            **Team Risks:**
+            • [First bullet point under 20 words]
+            • [Second bullet point under 20 words]
+            • [Third bullet point under 20 words]
+            
+            Use ONLY bullet points. No paragraphs or long text.
             """
             
-            # Generate analysis based on metrics instead of using API
-            analysis_points = []
+            system_prompt = "You are an expert startup risk analyst. Provide professional, investor-focused risk assessments."
             
-            # Risk level assessment
-            if context['risk_score'] > 70:
-                analysis_points.append("High risk profile requires careful due diligence.")
-            elif context['risk_score'] > 40:
-                analysis_points.append("Moderate risk level with manageable exposure.")
-            else:
-                analysis_points.append("Low risk profile with strong fundamentals.")
-            
-            # Stage-based analysis
-            if context['stage'] in ['Idea', 'MVP']:
-                analysis_points.append("Early stage presents execution and market validation risks.")
-            elif context['stage'] in ['Beta', 'Launch']:
-                analysis_points.append("Product-market fit validation is critical at this stage.")
-            else:
-                analysis_points.append("Growth stage shows proven concept with scaling opportunities.")
-            
-            # Funding analysis
-            funding_ratio = context['current_funding'] / max(context['funding_goal'], 1)
-            if funding_ratio < 0.3:
-                analysis_points.append("Low funding progress may indicate market validation challenges.")
-            elif funding_ratio > 0.8:
-                analysis_points.append("Strong funding traction demonstrates investor confidence.")
-            
-            return " ".join(analysis_points) or "Risk analysis based on current metrics and market position."
+            try:
+                return ai_service.generate_content(prompt, system_prompt, max_tokens=300)
+            except:
+                # Fallback to rule-based analysis
+                analysis_points = []
+                
+                # Risk level assessment
+                if context['risk_score'] > 70:
+                    analysis_points.append("• High risk profile requires careful due diligence")
+                    analysis_points.append("• Detailed financial and operational review needed")
+                elif context['risk_score'] > 40:
+                    analysis_points.append("• Moderate risk level with manageable exposure")
+                    analysis_points.append("• Standard due diligence recommended")
+                else:
+                    analysis_points.append("• Low risk profile with strong fundamentals")
+                    analysis_points.append("• Suitable for larger allocation")
+                
+                # Stage-based analysis
+                if context['stage'] in ['Idea', 'MVP']:
+                    analysis_points.append("• Early stage presents execution risks")
+                    analysis_points.append("• Market validation challenges ahead")
+                elif context['stage'] in ['Beta', 'Launch']:
+                    analysis_points.append("• Product-market fit validation critical")
+                    analysis_points.append("• Customer acquisition challenges")
+                else:
+                    analysis_points.append("• Growth stage shows proven concept")
+                    analysis_points.append("• Scaling opportunities available")
+                
+                # Funding analysis
+                funding_ratio = context['current_funding'] / max(context['funding_goal'], 1)
+                if funding_ratio < 0.3:
+                    analysis_points.append("• Low funding progress indicates challenges")
+                    analysis_points.append("• Market validation concerns")
+                elif funding_ratio > 0.8:
+                    analysis_points.append("• Strong funding traction demonstrated")
+                    analysis_points.append("• Investor confidence high")
+                
+                return "\n".join(analysis_points) or "Risk analysis based on current metrics and market position."
         except:
             return "Risk analysis based on current metrics and market position."
     
     def _generate_growth_analysis_text(self, context: Dict) -> str:
-        """Generate growth analysis text using AI"""
+        """Generate growth analysis text using AI service with fallback"""
         try:
+            from main.ai_service import ai_service
+            
             prompt = f"""
             Analyze the growth potential for the startup "{context['project_name']}" in the {context['category']} sector.
             
@@ -535,45 +571,75 @@ class AIAnalyst:
             - Stage: {context['stage']}
             - Description: {context['description'][:200]}...
             
-            Provide a concise growth analysis focusing on:
-            1. Market opportunity
-            2. Traction potential
-            3. Scalability factors
-            4. Growth drivers
+            Format your response EXACTLY like this with bullet points:
             
-            Keep it under 200 words and investor-focused.
+            **Market Opportunity:**
+            • [First bullet point under 20 words]
+            • [Second bullet point under 20 words]
+            • [Third bullet point under 20 words]
+            
+            **Traction Potential:**
+            • [First bullet point under 20 words]
+            • [Second bullet point under 20 words]
+            • [Third bullet point under 20 words]
+            
+            **Scalability Factors:**
+            • [First bullet point under 20 words]
+            • [Second bullet point under 20 words]
+            • [Third bullet point under 20 words]
+            
+            **Growth Drivers:**
+            • [First bullet point under 20 words]
+            • [Second bullet point under 20 words]
+            • [Third bullet point under 20 words]
+            
+            Use ONLY bullet points. No paragraphs or long text.
             """
             
-            # Generate analysis based on metrics instead of using API
-            analysis_points = []
+            system_prompt = "You are an expert startup growth analyst. Provide professional, investor-focused growth assessments."
             
-            # Growth potential assessment
-            if context['growth_score'] > 75:
-                analysis_points.append("Exceptional growth potential with strong market drivers.")
-            elif context['growth_score'] > 50:
-                analysis_points.append("Solid growth prospects with favorable market conditions.")
-            elif context['growth_score'] > 25:
-                analysis_points.append("Moderate growth potential requiring strategic execution.")
-            else:
-                analysis_points.append("Limited growth indicators suggest market challenges.")
-            
-            # Category-based insights
-            if context['category'] in ['AI', 'Fintech']:
-                analysis_points.append("High-growth sector with strong investor interest.")
-            elif context['category'] in ['Health', 'Education']:
-                analysis_points.append("Stable sector with sustainable growth opportunities.")
-            
-            # Stage progression analysis
-            if context['stage'] in ['Growth', 'Scaling']:
-                analysis_points.append("Advanced stage demonstrates proven scalability.")
-            
-            return " ".join(analysis_points) or "Growth analysis based on market metrics and sector dynamics."
+            try:
+                return ai_service.generate_content(prompt, system_prompt, max_tokens=300)
+            except:
+                # Fallback to rule-based analysis
+                analysis_points = []
+                
+                # Growth potential assessment
+                if context['growth_score'] > 75:
+                    analysis_points.append("• Exceptional growth potential with strong drivers")
+                    analysis_points.append("• Market conditions highly favorable")
+                elif context['growth_score'] > 50:
+                    analysis_points.append("• Solid growth prospects expected")
+                    analysis_points.append("• Favorable market conditions")
+                elif context['growth_score'] > 25:
+                    analysis_points.append("• Moderate growth potential")
+                    analysis_points.append("• Strategic execution required")
+                else:
+                    analysis_points.append("• Limited growth indicators")
+                    analysis_points.append("• Market challenges present")
+                
+                # Category-based insights
+                if context['category'] in ['AI', 'Fintech']:
+                    analysis_points.append("• High-growth sector with strong interest")
+                    analysis_points.append("• Investor demand high")
+                elif context['category'] in ['Health', 'Education']:
+                    analysis_points.append("• Stable sector with sustainable growth")
+                    analysis_points.append("• Long-term opportunities available")
+                
+                # Stage progression analysis
+                if context['stage'] in ['Growth', 'Scaling']:
+                    analysis_points.append("• Advanced stage shows proven scalability")
+                    analysis_points.append("• Growth trajectory established")
+                
+                return "\n".join(analysis_points) or "Growth analysis based on market metrics and sector dynamics."
         except:
             return "Growth analysis based on market metrics and sector dynamics."
     
     def _generate_peer_analysis_text(self, context: Dict) -> str:
-        """Generate peer benchmarking analysis text using AI"""
+        """Generate peer benchmarking analysis text using AI service with fallback"""
         try:
+            from main.ai_service import ai_service
+            
             prompt = f"""
             Provide peer benchmarking analysis for the startup "{context['project_name']}" in the {context['category']} sector.
             
@@ -583,48 +649,79 @@ class AIAnalyst:
             - Growth Score: {context['growth_score']}/100
             - Risk Score: {context['risk_score']}/100
             
-            Provide a concise peer analysis focusing on:
-            1. Competitive position
-            2. Sector performance
-            3. Platform standing
-            4. Benchmarking insights
+            Format your response EXACTLY like this with bullet points:
             
-            Keep it under 200 words and investor-focused.
+            **Competitive Position:**
+            • [First bullet point under 20 words]
+            • [Second bullet point under 20 words]
+            • [Third bullet point under 20 words]
+            
+            **Sector Performance:**
+            • [First bullet point under 20 words]
+            • [Second bullet point under 20 words]
+            • [Third bullet point under 20 words]
+            
+            **Platform Standing:**
+            • [First bullet point under 20 words]
+            • [Second bullet point under 20 words]
+            • [Third bullet point under 20 words]
+            
+            **Benchmarking Insights:**
+            • [First bullet point under 20 words]
+            • [Second bullet point under 20 words]
+            • [Third bullet point under 20 words]
+            
+            Use ONLY bullet points. No paragraphs or long text.
             """
             
-            # Generate analysis based on benchmarking data
-            analysis_points = []
+            system_prompt = "You are an expert startup competitive analyst. Provide professional, investor-focused benchmarking assessments."
             
-            # Ranking analysis
-            if context.get('sector_rank', 10) <= 3:
-                analysis_points.append("Top performer in sector with exceptional metrics.")
-            elif context.get('sector_rank', 10) <= 10:
-                analysis_points.append("Strong sector position above average performance.")
-            else:
-                analysis_points.append("Below average sector performance requires improvement.")
-            
-            # Platform comparison
-            if context.get('platform_rank', 50) <= 10:
-                analysis_points.append("Platform leader with outstanding investor appeal.")
-            elif context.get('platform_rank', 50) <= 25:
-                analysis_points.append("Above-average platform performance among startups.")
-            
-            # Sector performance
-            vs_avg = context.get('vs_sector_avg', 0)
-            if vs_avg > 20:
-                analysis_points.append("Significantly outperforms sector benchmarks.")
-            elif vs_avg > 0:
-                analysis_points.append("Modest outperformance vs sector average.")
-            else:
-                analysis_points.append("Underperformance vs sector indicates operational challenges.")
-            
-            return " ".join(analysis_points) or "Competitive position analysis based on platform and sector benchmarks."
+            try:
+                return ai_service.generate_content(prompt, system_prompt, max_tokens=300)
+            except:
+                # Fallback to rule-based analysis
+                analysis_points = []
+                
+                # Ranking analysis
+                if context.get('sector_rank', 10) <= 3:
+                    analysis_points.append("• Top performer in sector with exceptional metrics")
+                    analysis_points.append("• Market leadership position established")
+                elif context.get('sector_rank', 10) <= 10:
+                    analysis_points.append("• Strong sector position above average")
+                    analysis_points.append("• Competitive advantage maintained")
+                else:
+                    analysis_points.append("• Below average sector performance")
+                    analysis_points.append("• Improvement strategies needed")
+                
+                # Platform comparison
+                if context.get('platform_rank', 50) <= 10:
+                    analysis_points.append("• Platform leader with outstanding appeal")
+                    analysis_points.append("• Investor confidence high")
+                elif context.get('platform_rank', 50) <= 25:
+                    analysis_points.append("• Above-average platform performance")
+                    analysis_points.append("• Strong competitive position")
+                
+                # Sector performance
+                vs_avg = context.get('vs_sector_avg', 0)
+                if vs_avg > 20:
+                    analysis_points.append("• Significantly outperforms sector benchmarks")
+                    analysis_points.append("• Strong competitive advantage")
+                elif vs_avg > 0:
+                    analysis_points.append("• Modest outperformance vs sector average")
+                    analysis_points.append("• Positive momentum maintained")
+                else:
+                    analysis_points.append("• Underperformance vs sector average")
+                    analysis_points.append("• Operational challenges identified")
+                
+                return "\n".join(analysis_points) or "Competitive position analysis based on platform and sector benchmarks."
         except:
             return "Competitive position analysis based on platform and sector benchmarks."
     
     def _generate_recommendations_text(self, context: Dict) -> str:
-        """Generate investment recommendations text using AI"""
+        """Generate investment recommendations text using AI service with fallback"""
         try:
+            from main.ai_service import ai_service
+            
             prompt = f"""
             Provide investment recommendations for the startup "{context['project_name']}" in the {context['category']} sector.
             
@@ -634,47 +731,76 @@ class AIAnalyst:
             - Sector Rank: #{context['sector_rank']}
             - Stage: {context['stage']}
             
-            Provide concise investment recommendations focusing on:
-            1. Investment thesis
-            2. Key considerations
-            3. Due diligence areas
-            4. Risk mitigation strategies
+            Format your response EXACTLY like this with bullet points:
             
-            Keep it under 200 words and investor-focused.
+            **Investment Thesis:**
+            • [First bullet point under 20 words]
+            • [Second bullet point under 20 words]
+            • [Third bullet point under 20 words]
+            
+            **Key Considerations:**
+            • [First bullet point under 20 words]
+            • [Second bullet point under 20 words]
+            • [Third bullet point under 20 words]
+            
+            **Due Diligence Areas:**
+            • [First bullet point under 20 words]
+            • [Second bullet point under 20 words]
+            • [Third bullet point under 20 words]
+            
+            **Risk Mitigation Strategies:**
+            • [First bullet point under 20 words]
+            • [Second bullet point under 20 words]
+            • [Third bullet point under 20 words]
+            
+            Use ONLY bullet points. No paragraphs or long text.
             """
             
-            # Generate recommendations based on analysis
-            recommendations = []
+            system_prompt = "You are an expert startup investment advisor. Provide professional, investor-focused investment recommendations."
             
-            # Risk-based recommendations
-            risk_score = context.get('risk_score', 50)
-            if risk_score > 70:
-                recommendations.append("HIGH RISK: Recommend detailed due diligence and limited exposure.")
-            elif risk_score > 40:
-                recommendations.append("MODERATE RISK: Standard due diligence with diversified allocation.")
-            else:
-                recommendations.append("LOW RISK: Suitable for larger allocation with strong fundamentals.")
-            
-            # Growth-based recommendations
-            growth_score = context.get('growth_score', 50)
-            if growth_score > 75:
-                recommendations.append("Strong growth trajectory supports premium valuation.")
-            elif growth_score < 30:
-                recommendations.append("Limited growth potential suggests conservative valuation.")
-            
-            # Stage-based advice
-            stage = context.get('stage', 'Unknown')
-            if stage in ['Idea', 'MVP']:
-                recommendations.append("Early stage investment requires higher risk tolerance.")
-            elif stage in ['Growth', 'Scaling']:
-                recommendations.append("Proven model suitable for growth-focused portfolios.")
-            
-            # Sector recommendations
-            category = context.get('category', '')
-            if category in ['AI', 'Fintech']:
-                recommendations.append("High-demand sector with strong exit opportunities.")
-            
-            return " ".join(recommendations) or "Investment recommendation based on comprehensive risk-return analysis."
+            try:
+                return ai_service.generate_content(prompt, system_prompt, max_tokens=300)
+            except:
+                # Fallback to rule-based recommendations
+                recommendations = []
+                
+                # Risk-based recommendations
+                risk_score = context.get('risk_score', 50)
+                if risk_score > 70:
+                    recommendations.append("• HIGH RISK: Detailed due diligence required")
+                    recommendations.append("• Limited exposure recommended")
+                elif risk_score > 40:
+                    recommendations.append("• MODERATE RISK: Standard due diligence")
+                    recommendations.append("• Diversified allocation suitable")
+                else:
+                    recommendations.append("• LOW RISK: Larger allocation suitable")
+                    recommendations.append("• Strong fundamentals confirmed")
+                
+                # Growth-based recommendations
+                growth_score = context.get('growth_score', 50)
+                if growth_score > 75:
+                    recommendations.append("• Strong growth trajectory supports premium valuation")
+                    recommendations.append("• High upside potential identified")
+                elif growth_score < 30:
+                    recommendations.append("• Limited growth potential")
+                    recommendations.append("• Conservative valuation recommended")
+                
+                # Stage-based advice
+                stage = context.get('stage', 'Unknown')
+                if stage in ['Idea', 'MVP']:
+                    recommendations.append("• Early stage requires higher risk tolerance")
+                    recommendations.append("• Long-term investment horizon needed")
+                elif stage in ['Growth', 'Scaling']:
+                    recommendations.append("• Proven model suitable for growth portfolios")
+                    recommendations.append("• Established market position")
+                
+                # Sector recommendations
+                category = context.get('category', '')
+                if category in ['AI', 'Fintech']:
+                    recommendations.append("• High-demand sector with strong exits")
+                    recommendations.append("• Investor interest high")
+                
+                return "\n".join(recommendations) or "Investment recommendation based on comprehensive risk-return analysis."
         except:
             return "Investment recommendation based on comprehensive risk-return analysis."
     

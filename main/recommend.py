@@ -1,10 +1,6 @@
 import os
 import re
-import google.generativeai as genai
-
-# Configure Gemini API
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel('gemini-1.5-flash')
+from main.ai_service import ai_service
 
 def gemini_compare(projects):
     """
@@ -56,8 +52,8 @@ Confidence: <number>
 [END]
 """
 
-    response = model.generate_content(prompt)
-    text = response.text.strip()
+    response = ai_service.generate_content(prompt, max_tokens=1000)
+    text = response.strip()
     text = text.replace("[END]", "").strip()
 
     data = {"analysis": {}, "recommendation": {}}
