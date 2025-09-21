@@ -144,7 +144,7 @@ print('Database tables:', [table[0] for table in tables])
 echo "Checking for data export file..."
 if [ -f "nexora_data_export.json" ]; then
     echo "Found data export file, importing data..."
-    python manage.py import_data --input-file nexora_data_export.json || echo "Data import failed, continuing..."
+    python manage.py add_projects --input-file nexora_data_export.json || echo "Data import failed, continuing..."
 else
     echo "No data export file found, generating AI analysis for existing projects..."
     python manage.py generate_ai_analysis --force || echo "AI analysis generation failed, continuing..."
