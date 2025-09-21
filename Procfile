@@ -1,0 +1,1 @@
+web: gunicorn --config gunicorn.conf.py --timeout 120 --workers 2 --worker-class sync --max-requests 1000 --max-requests-jitter 100 --preload app.wsgi:application 
