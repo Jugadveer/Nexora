@@ -260,9 +260,11 @@ CELERY_TIMEZONE = TIME_ZONE
 # Database connection settings
 if not DEBUG:
     DATABASES['default']['CONN_MAX_AGE'] = 60
-    DATABASES['default']['OPTIONS'] = {
-        'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-    }
+    # Only apply MySQL-specific options if using MySQL
+    if DATABASES['default']['ENGINE'] == 'django.db.backends.mysql':
+        DATABASES['default']['OPTIONS'] = {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        }
 
 # Static files serving in production
 if not DEBUG:
