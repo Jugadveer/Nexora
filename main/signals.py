@@ -43,6 +43,7 @@ def handle_new_project(sender, instance, created, **kwargs):
     if created:
         logger.info(f"New project created: {instance.name}")
         _schedule_global_update()
+        _schedule_ai_analysis(instance)
 
 
 @receiver(post_delete, sender=Project)
@@ -97,6 +98,21 @@ def _schedule_global_update():
         logger.error(f"Error scheduling global update: {str(e)}")
 
 
+def _schedule_ai_analysis(project):
+    """Schedule AI analysis generation for a new project"""
+    try:
+        # Use threading to avoid blocking the request
+        thread = threading.Thread(
+            target=_generate_ai_analysis_async,
+            args=(project.id,)
+        )
+        thread.daemon = True
+        thread.start()
+        logger.info(f"Scheduled AI analysis for project: {project.name}")
+    except Exception as e:
+        logger.error(f"Error scheduling AI analysis for project {project.id}: {str(e)}")
+
+
 def _update_user_recommendations_async(user_id):
     """Update recommendations for a specific user (async)"""
     try:
@@ -105,13 +121,13 @@ def _update_user_recommendations_async(user_id):
         from main.views import generate_enhanced_recommendations_for_user
         generate_enhanced_recommendations_for_user(user)
         
-        logger.info(f"✅ Updated recommendations for user {user.username}")
+        logger.info(f"Updated recommendations for user {user.username}")
         success = True
         
         if success:
-            logger.info(f"✅ Updated recommendations for user {user.username}")
+            logger.info(f"Updated recommendations for user {user.username}")
         else:
-            logger.warning(f"⚠️ No recommendations updated for user {user.username}")
+            logger.warning(f"No recommendations updated for user {user.username}")
             
     except User.DoesNotExist:
         logger.warning(f"User {user_id} not found for recommendation update")
@@ -124,7 +140,7 @@ def _update_global_recommendations_async():
     try:
         from main.views import generate_enhanced_recommendations_for_user
         
-        logger.info("🔄 Starting global recommendation update...")
+        logger.info("Starting global recommendation update...")
         
         # Update recommendations for all users
         users = User.objects.all()
@@ -137,10 +153,34 @@ def _update_global_recommendations_async():
             except Exception as e:
                 logger.error(f"Error updating user {user.username}: {str(e)}")
         
-        logger.info(f"✅ Updated recommendations for {updated_count}/{users.count()} users")
+        logger.info(f"Updated recommendations for {updated_count}/{users.count()} users")
             
     except Exception as e:
         logger.error(f"Error in global recommendation update: {str(e)}")
+
+
+def _generate_ai_analysis_async(project_id):
+    """Generate AI analysis for a project (async)"""
+    try:
+        from main.models import Project, AIAnalystReport
+        from main.ai_analyst import ai_analyst
+        
+        project = Project.objects.get(id=project_id)
+        
+        # Check if analysis already exists
+        if AIAnalystReport.objects.filter(project=project).exists():
+            logger.info(f"AI analysis already exists for project: {project.name}")
+            return
+        
+        # Generate AI analysis
+        logger.info(f"Generating AI analysis for project: {project.name}")
+        report = ai_analyst.generate_report(project)
+        logger.info(f"AI analysis generated for project: {project.name} (Risk: {report.risk_level}, Growth: {report.growth_index})")
+        
+    except Project.DoesNotExist:
+        logger.warning(f"Project {project_id} not found for AI analysis")
+    except Exception as e:
+        logger.error(f"Error generating AI analysis for project {project_id}: {str(e)}")
 
 
 def get_recommendation_cache_key(user_id):

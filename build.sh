@@ -50,4 +50,8 @@ tables = cursor.fetchall()
 print('Database tables:', [table[0] for table in tables])
 "
 
+# Generate AI analysis for existing projects (in background to avoid timeout)
+echo "Generating AI analysis for existing projects..."
+python manage.py generate_ai_analysis --force || echo "AI analysis generation failed, continuing..."
+
 echo "Build complete!"
