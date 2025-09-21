@@ -152,9 +152,10 @@ def your_view(request):
 
 # Home view that works for both authenticated and non-authenticated users
 def home(request):
-    # If user is not authenticated, show all projects
-    if not request.user.is_authenticated:
-        projects = Project.objects.all().order_by('-created_at')
+    try:
+        # If user is not authenticated, show all projects
+        if not request.user.is_authenticated:
+            projects = Project.objects.all().order_by('-created_at')
         
         # Add funding percentage calculation for each project
         for project in projects:
@@ -449,6 +450,23 @@ def home(request):
     context.update(get_unread_counts(request.user))
     
     return render(request, 'home.html', context)
+    
+    except Exception as e:
+        logger.error(f"Error in home view: {str(e)}")
+        # Return empty context if database is not ready
+        context = {
+            'projects': [],
+            'query': '',
+            'selected_category': None,
+            'selected_stage': None,
+            'mine': False,
+            'all_projects': True,
+            'invested': False,
+            'is_recommendations': False,
+            'show_personalized_alert': False,
+            'error_message': 'Database is being set up. Please try again in a moment.'
+        }
+        return render(request, 'home.html', context)
 
 
 
