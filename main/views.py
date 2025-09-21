@@ -151,13 +151,266 @@ def your_view(request):
 
 
 # Home view that works for both authenticated and non-authenticated users
+# Home view that works for both authenticated and non-authenticated users
 def home(request):
     try:
         # If user is not authenticated, show all projects
         if not request.user.is_authenticated:
             projects = Project.objects.all().order_by('-created_at')
+            
+            # Add funding percentage calculation for each project
+            for project in projects:
+                if project.funding_goal > 0:
+                    current_funding = project.current_funding()
+                    project.funding_percentage = min(100, (current_funding / project.funding_goal) * 100)
+                else:
+                    project.funding_percentage = 0
+                
+                # For non-authenticated users, only show "Funded" if project reached goal
+                project.user_funded = project.funding_percentage >= 100
+                project.user_invested = False
+            
+            context = {
+                'projects': projects,
+                'query': '',
+                'selected_category': None,
+                'selected_stage': None,
+                'mine': False,
+                'all_projects': True,
+                'invested': False,
+                'is_recommendations': False,
+                'show_personalized_alert': False,
+            }
+            
+            return render(request, 'home.html', context)
         
-        # Add funding percentage calculation for each project
+        # For authenticated users, show their projects
+        query = request.GET.get('q', '')
+        category = request.GET.get('category')
+        stage = request.GET.get('stage')
+        mine = request.GET.get('mine') == '1'
+        risk_level = request.GET.get('risk_level')
+        growth_index = request.GET.get('growth_index')
+        
+        if request.method == 'POST' and request.user.is_authenticated:
+            try:
+                name = request.POST.get('name')
+                description = request.POST.get('description')
+                market = request.POST.get('market')
+                problem = request.POST.get('problem')
+                competition = request.POST.get('competition')
+                details = request.POST.get('details')
+                stage = request.POST.get('stage')
+                category = request.POST.get('category')
+                url = request.POST.get('url')
+                banner = request.FILES.get('banner')
+                funding_goal = request.POST.get('funding_goal', 0)
+
+                # Validate required fields
+                if not name or not description or not stage or not category:
+                    messages.error(request, "Please fill in all required fields.")
+                    return render(request, 'home.html')
+
+                # Analyze project data with AI before creation
+                project_data = {
+                    'description': description or '',
+                    'problem': problem or '',
+                    'market': market or '',
+                    'competition': competition or '',
+                    'details': details or ''
+                }
+                
+                # Get AI analysis and suggestions
+                combined_text = ' '.join([v for v in project_data.values() if v])
+                pitch_analysis = analyze_pitch_strength(combined_text)
+                
+                # Create the project (single creation, not duplicate)
+                project = Project.objects.create(
+                    user=request.user,
+                    name=name,
+                    description=description,
+                    market=market,
+                    problem=problem,
+                    competition=competition,
+                    details=details,
+                    stage=stage,
+                    category=category,
+                    url=url,
+                    banner=banner,
+                    funding_goal=funding_goal
+                )
+                
+                # Store AI analysis results (you could add a field to Project model for this)
+                if pitch_analysis['score'] < 60:
+                    messages.warning(request, f"Project created successfully! AI Score: {pitch_analysis['score']}/100. Consider improving your pitch with the suggestions provided.")
+                else:
+                    messages.success(request, f"Project '{name}' created successfully! AI Score: {pitch_analysis['score']}/100")
+
+                # Parse positions JSON
+                try:
+                    positions_data = json.loads(request.POST.get('positions_json', '[]'))
+                    if not isinstance(positions_data, list):
+                        positions_data = []
+                except json.JSONDecodeError:
+                    # Handle invalid JSON by defaulting to empty list
+                    positions_data = []
+
+                # Create positions for the project
+                for pos in positions_data:
+                    if isinstance(pos, dict) and all(key in pos for key in ['title', 'description', 'compensation_type']):
+                        Position.objects.create(
+                            project=project,
+                            title=pos['title'],
+                            description=pos['description'],
+                            compensation_type=pos['compensation_type']
+                        )
+
+                messages.success(request, f"Project '{name}' created successfully!")
+                return redirect('home')
+
+            except Exception as e:
+                messages.error(request, f"Error creating project: {str(e)}")
+                return render(request, 'home.html')
+        
+        # ENHANCED SEARCH AND FILTERING
+        query = request.GET.get('q', '').strip()
+        all_projects = request.GET.get('all_projects') == '1'
+        invested = request.GET.get('invested') == '1'
+        
+        # Start with all projects
+        projects = Project.objects.all()
+        
+        # Apply filters
+        if query:
+            projects = projects.filter(
+                Q(name__icontains=query) |
+                Q(description__icontains=query) |
+                Q(problem__icontains=query) |
+                Q(market__icontains=query) |
+                Q(competition__icontains=query) |
+                Q(details__icontains=query)
+            )
+
+        if category:
+            projects = projects.filter(category__iexact=category)
+
+        if stage:
+            projects = projects.filter(stage__iexact=stage)
+
+        if mine:
+            projects = projects.filter(user=request.user)
+        
+        if invested and request.user.is_authenticated:
+            # Show projects the user has invested in
+            invested_projects = Investment.objects.filter(investor=request.user).values_list('project', flat=True)
+            projects = projects.filter(id__in=invested_projects)
+        
+        # AI Score filtering
+        if risk_level:
+            projects = projects.filter(ai_report__risk_level=risk_level)
+        
+        if growth_index:
+            projects = projects.filter(ai_report__growth_index=growth_index)
+        
+        # For authenticated users with no filters, show personalized recommendations
+        if (request.user.is_authenticated and 
+            not query and not category and not stage and not mine and not invested and not all_projects and not risk_level and not growth_index):
+            
+            # Check if user has enough data for personalized recommendations
+            user_has_data = (
+                Investment.objects.filter(investor=request.user).exists() or
+                ProjectView.objects.filter(user=request.user).exists()
+            )
+            
+            if user_has_data:
+                # User has interaction data - show personalized recommendations
+                recommendations = Recommendation.objects.filter(
+                    user=request.user
+                ).select_related('project').order_by('-score')[:20]
+                
+                # If no recommendations exist, generate them on-demand
+                if not recommendations.exists():
+                    generate_enhanced_recommendations_for_user(request.user)
+                    recommendations = Recommendation.objects.filter(
+                        user=request.user
+                    ).select_related('project').order_by('-score')[:20]
+                
+                # Get recommended projects
+                recommended_projects = [rec.project for rec in recommendations]
+                
+                # Exclude projects the user has already invested in or created
+                user_invested_projects = Investment.objects.filter(investor=request.user).values_list('project', flat=True)
+                user_created_projects = Project.objects.filter(user=request.user).values_list('id', flat=True)
+                
+                # Filter out only invested and created projects from recommendations
+                # Allow viewed projects to be recommended again
+                filtered_recommendations = []
+                for rec in recommendations:
+                    if (rec.project.id not in user_invested_projects and 
+                        rec.project.id not in user_created_projects):
+                        filtered_recommendations.append(rec.project)
+                
+                # If no filtered recommendations, show all projects instead
+                if not filtered_recommendations:
+                    # No personalized recommendations available - show all projects instead
+                    projects = Project.objects.all().order_by('-created_at')
+                    is_recommendations = False
+                    show_personalized_alert = False  # Don't show personalized recommendations alert
+                else:
+                    projects = filtered_recommendations
+                    is_recommendations = True
+                    show_personalized_alert = True  # Show personalized recommendations alert
+                
+            else:
+                # New user with no data - show all projects instead of cold start recommendations
+                # Don't show personalized recommendations alert for new users
+                projects = Project.objects.all().order_by('-created_at')
+                is_recommendations = False
+                show_personalized_alert = False  # Don't show personalized recommendations alert
+            
+            # Add context to indicate these are recommendations
+            context = {
+                'projects': projects,
+                'query': query,
+                'selected_category': category,
+                'selected_stage': stage,
+                'mine': mine,
+                'all_projects': all_projects,
+                'invested': invested,
+                'is_recommendations': is_recommendations,
+                'show_personalized_alert': show_personalized_alert,
+                'selected_risk_level': risk_level,
+                'selected_growth_index': growth_index,
+            }
+        else:
+            # Show all projects when filters are applied or "All Projects" is selected
+            # For "ALL PROJECTS" filter, show ALL projects (including invested ones)
+            if all_projects and request.user.is_authenticated:
+                # When "ALL PROJECTS" is selected, show all projects but exclude user's created projects
+                user_created_projects = Project.objects.filter(user=request.user).values_list('id', flat=True)
+                
+                # Show all projects except user's created projects (but include invested ones)
+                projects = projects.exclude(
+                    id__in=list(user_created_projects)
+                )
+            
+            projects = projects.order_by('-created_at')
+            
+            context = {
+                'projects': projects,
+                'query': query,
+                'selected_category': category,
+                'selected_stage': stage,
+                'mine': mine,
+                'all_projects': all_projects,
+                'invested': invested,
+                'is_recommendations': False,
+                'show_personalized_alert': False,
+                'selected_risk_level': risk_level,
+                'selected_growth_index': growth_index,
+            }
+
+        # Add funding percentage calculation and user-specific funding status for each project
         for project in projects:
             if project.funding_goal > 0:
                 current_funding = project.current_funding()
@@ -165,292 +418,41 @@ def home(request):
             else:
                 project.funding_percentage = 0
             
-            # For non-authenticated users, only show "Funded" if project reached goal
-            project.user_funded = project.funding_percentage >= 100
-            project.user_invested = False
-        
-        context = {
-            'projects': projects,
-            'query': '',
-            'selected_category': None,
-            'selected_stage': None,
-            'mine': False,
-            'all_projects': True,
-            'invested': False,
-            'is_recommendations': False,
-            'show_personalized_alert': False,
-        }
+            # Add funding status tags
+            # "GOAL REACHED" - visible to everyone when funding goal is complete
+            project.goal_reached = project.funding_percentage >= 100
+            
+            # "Invested" - visible only to the current user if they invested in this project
+            if request.user.is_authenticated:
+                project.user_invested = Investment.objects.filter(
+                    investor=request.user,
+                    project=project
+                ).exists()
+            else:
+                project.user_invested = False
+                
+            # Keep existing user_funded logic for backward compatibility
+            if request.user.is_authenticated:
+                # Check if user has invested in this project
+                user_has_invested = Investment.objects.filter(
+                    investor=request.user,
+                    project=project
+                ).exists()
+                
+                # Check if project has reached funding goal
+                project_is_funded = project.funding_percentage >= 100
+                
+                # User-specific funding status: "Funded" if user invested OR project reached goal
+                project.user_funded = user_has_invested or project_is_funded
+            else:
+                # For non-authenticated users, only show "Funded" if project reached goal
+                project.user_funded = project.funding_percentage >= 100
+
+        # Add unread message counts
+        context.update(get_unread_counts(request.user))
         
         return render(request, 'home.html', context)
-    
-    # For authenticated users, show their projects
-    query = request.GET.get('q', '')
-    category = request.GET.get('category')
-    stage = request.GET.get('stage')
-    mine = request.GET.get('mine') == '1'
-    risk_level = request.GET.get('risk_level')
-    growth_index = request.GET.get('growth_index')
-    if request.method == 'POST' and request.user.is_authenticated:
-        try:
-            name = request.POST.get('name')
-            description = request.POST.get('description')
-            market = request.POST.get('market')
-            problem = request.POST.get('problem')
-            competition = request.POST.get('competition')
-            details = request.POST.get('details')
-            stage = request.POST.get('stage')
-            category = request.POST.get('category')
-            url = request.POST.get('url')
-            banner = request.FILES.get('banner')
-            funding_goal = request.POST.get('funding_goal', 0)
-
-            # Validate required fields
-            if not name or not description or not stage or not category:
-                messages.error(request, "Please fill in all required fields.")
-                return render(request, 'home.html')
-
-            # Analyze project data with AI before creation
-            project_data = {
-                'description': description or '',
-                'problem': problem or '',
-                'market': market or '',
-                'competition': competition or '',
-                'details': details or ''
-            }
-            
-            # Get AI analysis and suggestions
-            combined_text = ' '.join([v for v in project_data.values() if v])
-            pitch_analysis = analyze_pitch_strength(combined_text)
-            
-            # Create the project (single creation, not duplicate)
-            project = Project.objects.create(
-                user=request.user,
-                name=name,
-                description=description,
-                market=market,
-                problem=problem,
-                competition=competition,
-                details=details,
-                stage=stage,
-                category=category,
-                url=url,
-                banner=banner,
-                funding_goal=funding_goal
-            )
-            
-            # Store AI analysis results (you could add a field to Project model for this)
-            if pitch_analysis['score'] < 60:
-                messages.warning(request, f"Project created successfully! AI Score: {pitch_analysis['score']}/100. Consider improving your pitch with the suggestions provided.")
-            else:
-                messages.success(request, f"Project '{name}' created successfully! AI Score: {pitch_analysis['score']}/100")
-
-
-            # Parse positions JSON
-            try:
-                positions_data = json.loads(request.POST.get('positions_json', '[]'))
-                if not isinstance(positions_data, list):
-                    positions_data = []
-            except json.JSONDecodeError:
-                # Handle invalid JSON by defaulting to empty list
-                positions_data = []
-
-            # Create positions for the project
-            for pos in positions_data:
-                if isinstance(pos, dict) and all(key in pos for key in ['title', 'description', 'compensation_type']):
-                    Position.objects.create(
-                        project=project,
-                        title=pos['title'],
-                        description=pos['description'],
-                        compensation_type=pos['compensation_type']
-                    )
-
-            messages.success(request, f"Project '{name}' created successfully!")
-            return redirect('home')
-
-        except Exception as e:
-            messages.error(request, f"Error creating project: {str(e)}")
-            return render(request, 'home.html')
-    # ENHANCED SEARCH AND FILTERING
-    query = request.GET.get('q', '').strip()
-    all_projects = request.GET.get('all_projects') == '1'
-    invested = request.GET.get('invested') == '1'
-    
-    # Start with all projects
-    projects = Project.objects.all()
-    
-    # Apply filters
-    if query:
-        projects = projects.filter(
-            Q(name__icontains=query) |
-            Q(description__icontains=query) |
-            Q(problem__icontains=query) |
-            Q(market__icontains=query) |
-            Q(competition__icontains=query) |
-            Q(details__icontains=query)
-        )
-
-    if category:
-        projects = projects.filter(category__iexact=category)
-
-    if stage:
-        projects = projects.filter(stage__iexact=stage)
-
-    if mine:
-        projects = projects.filter(user=request.user)
-    
-    if invested and request.user.is_authenticated:
-        # Show projects the user has invested in
-        invested_projects = Investment.objects.filter(investor=request.user).values_list('project', flat=True)
-        projects = projects.filter(id__in=invested_projects)
-    
-    # AI Score filtering
-    if risk_level:
-        projects = projects.filter(ai_report__risk_level=risk_level)
-    
-    if growth_index:
-        projects = projects.filter(ai_report__growth_index=growth_index)
-    
-    # For authenticated users with no filters, show personalized recommendations
-    if (request.user.is_authenticated and 
-        not query and not category and not stage and not mine and not invested and not all_projects and not risk_level and not growth_index):
         
-        # Check if user has enough data for personalized recommendations
-        user_has_data = (
-            Investment.objects.filter(investor=request.user).exists() or
-            ProjectView.objects.filter(user=request.user).exists()
-        )
-        
-        if user_has_data:
-            # User has interaction data - show personalized recommendations
-            recommendations = Recommendation.objects.filter(
-                user=request.user
-            ).select_related('project').order_by('-score')[:20]
-            
-            # If no recommendations exist, generate them on-demand
-            if not recommendations.exists():
-                generate_enhanced_recommendations_for_user(request.user)
-                recommendations = Recommendation.objects.filter(
-                    user=request.user
-                ).select_related('project').order_by('-score')[:20]
-            
-            # Get recommended projects
-            recommended_projects = [rec.project for rec in recommendations]
-            
-            # Exclude projects the user has already invested in or created
-            user_invested_projects = Investment.objects.filter(investor=request.user).values_list('project', flat=True)
-            user_created_projects = Project.objects.filter(user=request.user).values_list('id', flat=True)
-            
-            # Filter out only invested and created projects from recommendations
-            # Allow viewed projects to be recommended again
-            filtered_recommendations = []
-            for rec in recommendations:
-                if (rec.project.id not in user_invested_projects and 
-                    rec.project.id not in user_created_projects):
-                    filtered_recommendations.append(rec.project)
-            
-            # If no filtered recommendations, show all projects instead
-            if not filtered_recommendations:
-                # No personalized recommendations available - show all projects instead
-                projects = Project.objects.all().order_by('-created_at')
-                is_recommendations = False
-                show_personalized_alert = False  # Don't show personalized recommendations alert
-            else:
-                projects = filtered_recommendations
-                is_recommendations = True
-                show_personalized_alert = True  # Show personalized recommendations alert
-            
-        else:
-            # New user with no data - show all projects instead of cold start recommendations
-            # Don't show personalized recommendations alert for new users
-            projects = Project.objects.all().order_by('-created_at')
-            is_recommendations = False
-            show_personalized_alert = False  # Don't show personalized recommendations alert
-        
-        # Add context to indicate these are recommendations
-        context = {
-            'projects': projects,
-            'query': query,
-            'selected_category': category,
-            'selected_stage': stage,
-            'mine': mine,
-            'all_projects': all_projects,
-            'invested': invested,
-            'is_recommendations': is_recommendations,
-            'show_personalized_alert': show_personalized_alert,
-            'selected_risk_level': risk_level,
-            'selected_growth_index': growth_index,
-        }
-    else:
-        # Show all projects when filters are applied or "All Projects" is selected
-        # For "ALL PROJECTS" filter, show ALL projects (including invested ones)
-        if all_projects and request.user.is_authenticated:
-            # When "ALL PROJECTS" is selected, show all projects but exclude user's created projects
-            user_created_projects = Project.objects.filter(user=request.user).values_list('id', flat=True)
-            
-            # Show all projects except user's created projects (but include invested ones)
-            projects = projects.exclude(
-                id__in=list(user_created_projects)
-            )
-        
-        projects = projects.order_by('-created_at')
-        
-        context = {
-            'projects': projects,
-            'query': query,
-            'selected_category': category,
-            'selected_stage': stage,
-            'mine': mine,
-            'all_projects': all_projects,
-            'invested': invested,
-            'is_recommendations': False,
-            'show_personalized_alert': False,
-            'selected_risk_level': risk_level,
-            'selected_growth_index': growth_index,
-        }
-
-    # Add funding percentage calculation and user-specific funding status for each project
-    for project in projects:
-        if project.funding_goal > 0:
-            current_funding = project.current_funding()
-            project.funding_percentage = min(100, (current_funding / project.funding_goal) * 100)
-        else:
-            project.funding_percentage = 0
-        
-        # Add funding status tags
-        # "GOAL REACHED" - visible to everyone when funding goal is complete
-        project.goal_reached = project.funding_percentage >= 100
-        
-        # "Invested" - visible only to the current user if they invested in this project
-        if request.user.is_authenticated:
-            project.user_invested = Investment.objects.filter(
-                investor=request.user,
-                project=project
-            ).exists()
-        else:
-            project.user_invested = False
-            
-        # Keep existing user_funded logic for backward compatibility
-        if request.user.is_authenticated:
-            # Check if user has invested in this project
-            user_has_invested = Investment.objects.filter(
-                investor=request.user,
-                project=project
-            ).exists()
-            
-            # Check if project has reached funding goal
-            project_is_funded = project.funding_percentage >= 100
-            
-            # User-specific funding status: "Funded" if user invested OR project reached goal
-            project.user_funded = user_has_invested or project_is_funded
-        else:
-            # For non-authenticated users, only show "Funded" if project reached goal
-            project.user_funded = project.funding_percentage >= 100
-
-    # Add unread message counts
-    context.update(get_unread_counts(request.user))
-    
-    return render(request, 'home.html', context)
-    
     except Exception as e:
         logger.error(f"Error in home view: {str(e)}")
         # Return empty context if database is not ready
@@ -467,59 +469,6 @@ def home(request):
             'error_message': 'Database is being set up. Please try again in a moment.'
         }
         return render(request, 'home.html', context)
-
-
-
-
-# Ensure only authenticated users can access this view
-# @login_required
-# def home(request):
-#     if request.method == 'POST' and request.user.is_authenticated:
-#         name = request.POST.get('name')
-#         description = request.POST.get('description')
-#         market = request.POST.get('market')
-#         problem = request.POST.get('problem')
-#         competition = request.POST.get('competition')
-#         details = request.POST.get('details')
-#         stage = request.POST.get('stage')
-#         category = request.POST.get('category')
-#         url = request.POST.get('url')
-#         banner = request.FILES.get('banner')
-        
-        
-#         funding_goal = request.POST.get('funding_goal', 0)
-#         project=Project.objects.create(
-#             user=request.user,
-#             name=name,
-#             description=description,
-#             market=market,
-#             problem=problem,
-#             competition=competition,
-#             details=details,
-#             stage=stage,
-#             category=category,
-#             url=url,
-#             banner=banner,
-#             funding_goal=funding_goal 
-#         )
-        
-#         # Parse positions JSON
-#         positions_data = json.loads(request.POST.get('positions_json', '[]'))
-#         for pos in positions_data:
-#             Position.objects.create(
-#                 project=project,
-#                 title=pos['title'],
-#                 description=pos['description'],
-#                 compensation_type=pos['compensation_type']
-#             )
-
-#         return redirect('home')  # Make sure your URL name is 'home'
-#     projects = Project.objects.all().order_by('-created_at')  # Show newest first
-#     return render(request, 'home.html', {'projects': projects})
-
-
-
-# Login view
 def login_page(request):
     if request.method == 'POST':
         username = request.POST.get('username')
