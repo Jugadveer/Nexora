@@ -3,7 +3,7 @@ services:
     name: nexora
     env: python
     plan: free
-    buildCommand: "pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py force_migrate && python manage.py generate_ai_analysis --force && python manage.py collectstatic --noinput"
+        buildCommand: "pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py force_migrate && python manage.py add_projects --input-file nexora_data_export.json && python manage.py generate_ai_analysis --force && python manage.py collectstatic --noinput"
     startCommand: "gunicorn app.wsgi:application --bind 0.0.0.0:$PORT --timeout 120 --workers 2 --worker-class sync --max-requests 1000 --max-requests-jitter 100 --preload"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
